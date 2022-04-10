@@ -45,11 +45,11 @@
         custom:JV_buttonColor="#FF6E40" />
 
 
-    <!--    <com.github.niqdev.mjpeg.MjpegSurfaceView-->
-    <!--        android:id="@+id/mjpegView"-->
-    <!--        android:layout_width="match_parent"-->
-    <!--        android:layout_height="match_parent"-->
-    <!--        stream:type="stream_default" />-->
-
+    <com.longdo.mjpegviewer.MjpegView
+        android:id="@+id/mjpegview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="false"
+        android:layout_marginTop="0dp" />
 
 </RelativeLayout>

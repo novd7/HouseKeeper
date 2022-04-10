@@ -6,10 +6,11 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import com.longdo.mjpegviewer.MjpegView;
 import io.github.controlwear.virtual.joystick.android.JoystickView;
 
 public class MainActivity extends AppCompatActivity /*implements JoystickView.JoystickListener*/ {
-    //    MjpegView mjpegView;
+    private MjpegView mjpegView;
     private TextView mTextViewAngle;
     private TextView mTextViewStrength;
     private TextView mTextViewCoordinate;
@@ -37,17 +38,30 @@ public class MainActivity extends AppCompatActivity /*implements JoystickView.Jo
             }
         });
 
-//        mjpegView = (MjpegView) findViewById(R.id.mjpegView);
-//
-//
-//        Mjpeg.newInstance()
-//                //.credential("USERNAME", "PASSWORD")
-//                .open("http://192.168.2.254:8000/stream.mjpg")
-//                .subscribe(inputStream -> {
-//                    mjpegView.setSource(inputStream);
-//                    mjpegView.setDisplayMode(DisplayMode.BEST_FIT);
-//                    mjpegView.showFps(true);
-//                });
+        mjpegView = findViewById(R.id.mjpegview);
+        mjpegView.setAdjustHeight(true);
+        mjpegView.setMode(MjpegView.MODE_FIT_WIDTH);
+        mjpegView.setUrl("http://192.168.2.254:8000/stream.mjpg");
+        mjpegView.setRecycleBitmap(true);
     }
 
+
+
+    @Override
+    protected void onResume() {
+        mjpegView.startStream();
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        mjpegView.stopStream();
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        mjpegView.stopStream();
+        super.onStop();
+    }
 }
