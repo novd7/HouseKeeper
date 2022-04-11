@@ -1,19 +1,69 @@
 package ru.housekeeper;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.longdo.mjpegviewer.MjpegView;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import io.github.controlwear.virtual.joystick.android.JoystickView;
 
-public class MainActivity extends AppCompatActivity /*implements JoystickView.JoystickListener*/ {
+public class MainActivity extends AppCompatActivity {
     private MjpegView mjpegView;
     private TextView mTextViewAngle;
     private TextView mTextViewStrength;
     private TextView mTextViewCoordinate;
+    private ExecutorService executorService;
+
+
+    protected String doPost(int angle, int strength) {
+        Log.d("doInBackground", "" + angle + " " + strength);
+
+        try {
+            URL url = new URL("http://192.168.2.254:8000/server");
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("POST");
+            con.setRequestProperty("Content-Type", "application/json; utf-8");
+            con.setDoOutput(true);
+            String json = String.format(Locale.ENGLISH,
+                    "{\"angle\": %d, \"strength\": %d}", angle, strength);
+
+            try (OutputStream os = con.getOutputStream()) {
+                byte[] input = json.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine = null;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+
+                String responseBody = response.toString();
+                Log.d("doInBackground", "resp" + responseBody);
+                return responseBody;
+            }
+
+        } catch (Exception e) {
+            Log.e("", "doInBackground: ", e);
+        }
+        return "";
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,11 +73,20 @@ public class MainActivity extends AppCompatActivity /*implements JoystickView.Jo
         mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
         mTextViewCoordinate = findViewById(R.id.textView_coordinate_right);
 
+        executorService = Executors.newFixedThreadPool(1);
+
         final JoystickView joystickRight = (JoystickView) findViewById(R.id.joystickView_right);
         joystickRight.setOnMoveListener(new JoystickView.OnMoveListener() {
             @SuppressLint("DefaultLocale")
             @Override
             public void onMove(int angle, int strength) {
+                Log.d("myOnMove", "" + angle + " " + strength);
+
+                try {
+                    executorService.submit(() -> doPost(angle, strength)).get();
+                } catch (Exception e) {
+                    Log.e("myOnMove e ", "", e);
+                }
                 mTextViewAngle.setText(angle + "°");
                 mTextViewStrength.setText(strength + "%");
                 mTextViewCoordinate.setText(
@@ -44,7 +103,6 @@ public class MainActivity extends AppCompatActivity /*implements JoystickView.Jo
         mjpegView.setUrl("http://192.168.2.254:8000/stream.mjpg");
         mjpegView.setRecycleBitmap(true);
     }
-
 
 
     @Override
