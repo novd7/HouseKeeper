@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.controlwear.virtual.joystick.android.JoystickView;
 
@@ -27,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTextViewStrength;
     private TextView mTextViewCoordinate;
     private ExecutorService executorService;
-
+    private AtomicBoolean isServerBusy;
 
     protected String doPost(int angle, int strength) {
         Log.d("doInBackground", "" + angle + " " + strength);
@@ -37,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
+            con.setConnectTimeout(1000);
+            con.setReadTimeout(5000);
             con.setDoOutput(true);
             String json = String.format(Locale.ENGLISH,
                     "{\"angle\": %d, \"strength\": %d}", angle, strength);
@@ -49,20 +53,23 @@ public class MainActivity extends AppCompatActivity {
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
                 StringBuilder response = new StringBuilder();
-                String responseLine = null;
+                String responseLine;
                 while ((responseLine = br.readLine()) != null) {
                     response.append(responseLine.trim());
                 }
 
                 String responseBody = response.toString();
-                Log.d("doInBackground", "resp" + responseBody);
+                Log.d("doInBackground", "resp " + responseBody);
                 return responseBody;
             }
 
         } catch (Exception e) {
             Log.e("", "doInBackground: ", e);
+            return e.getMessage();
+        } finally {
+            isServerBusy.set(false);
         }
-        return "";
+//        return "";
     }
 
     @Override
@@ -72,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         mTextViewAngle = (TextView) findViewById(R.id.textView_angle_right);
         mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
         mTextViewCoordinate = findViewById(R.id.textView_coordinate_right);
+        isServerBusy = new AtomicBoolean(false);
 
         executorService = Executors.newFixedThreadPool(1);
 
@@ -81,19 +89,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onMove(int angle, int strength) {
                 Log.d("myOnMove", "" + angle + " " + strength);
-
-                try {
-                    executorService.submit(() -> doPost(angle, strength)).get();
-                } catch (Exception e) {
-                    Log.e("myOnMove e ", "", e);
+                if (isServerBusy.get()) {
+                    return;
                 }
+                isServerBusy.set(true);
+                Future<String> future = executorService.submit(() -> doPost(angle, strength));
+                 // todo Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+
                 mTextViewAngle.setText(angle + "°");
                 mTextViewStrength.setText(strength + "%");
-                mTextViewCoordinate.setText(
-                        String.format("x%03d:y%03d",
-                                joystickRight.getNormalizedX(),
-                                joystickRight.getNormalizedY())
-                );
+//                mTextViewCoordinate.setText(
+//                        String.format("x%03d:y%03d",
+//                                joystickRight.getNormalizedX(),
+//                                joystickRight.getNormalizedY())
+//                );
             }
         });
 
