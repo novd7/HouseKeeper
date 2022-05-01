@@ -1,5 +1,6 @@
 package ru.housekeeper;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -37,7 +38,8 @@ public class StartActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("address", addressToSave);
             editor.commit();
-            finish();
+            Intent switchActivityIntent = new Intent(this, MainActivity.class);
+            startActivity(switchActivityIntent);
         } catch (MalformedURLException e) {
             Toast.makeText(this, "Введите корректный адрес", Toast.LENGTH_LONG).show();
         }

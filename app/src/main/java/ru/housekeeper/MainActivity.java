@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.longdo.mjpegviewer.MjpegView;
@@ -15,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -34,12 +36,12 @@ public class MainActivity extends AppCompatActivity {
     private AtomicBoolean isServerBusy;
     SharedPreferences sp;
     String urlText;
+    URL url;
 
     protected String doPost(int angle, int strength) {
         Log.d("doInBackground", "" + angle + " " + strength);
 
         try {
-            URL url = new URL(urlText + "/server");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
@@ -73,18 +75,15 @@ public class MainActivity extends AppCompatActivity {
         } finally {
             isServerBusy.set(false);
         }
-//        return "";
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Intent switchActivityIntent = new Intent(this,
-                StartActivity.class);
-        startActivity(switchActivityIntent);
         sp = getSharedPreferences("address", MODE_PRIVATE);
         urlText = sp.getString("address", "not defined");
+        url = getUrl();
         mTextViewAngle = (TextView) findViewById(R.id.textView_angle_right);
         mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
         mTextViewCoordinate = findViewById(R.id.textView_coordinate_right);
@@ -100,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 isServerBusy.set(true);
-                Future<String> future = executorService.submit(() -> doPost(angle, strength));
+                executorService.submit(() -> doPost(angle, strength));
                 // todo Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
 
                 mTextViewAngle.setText(angle + "°");
@@ -118,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
         mjpegView.setMode(MjpegView.MODE_FIT_WIDTH);
         mjpegView.setUrl(urlText + "/stream.mjpg");
         mjpegView.setRecycleBitmap(true);
+    }
+
+    @NonNull
+    private URL getUrl() {
+        try {
+            return new URL(urlText + "/server");
+        } catch (MalformedURLException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 
