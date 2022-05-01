@@ -1,6 +1,8 @@
-package ru.housekeeper;
+package ru.housekeeper;  // http://192.168.2.254:8000
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -30,12 +32,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTextViewCoordinate;
     private ExecutorService executorService;
     private AtomicBoolean isServerBusy;
+    SharedPreferences sp;
+    String urlText;
 
     protected String doPost(int angle, int strength) {
         Log.d("doInBackground", "" + angle + " " + strength);
 
         try {
-            URL url = new URL("http://192.168.2.254:8000/server");
+            URL url = new URL(urlText + "/server");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
@@ -76,13 +80,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Intent switchActivityIntent = new Intent(this,
+                StartActivity.class);
+        startActivity(switchActivityIntent);
+        sp = getSharedPreferences("address", MODE_PRIVATE);
+        urlText = sp.getString("address", "not defined");
         mTextViewAngle = (TextView) findViewById(R.id.textView_angle_right);
         mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
         mTextViewCoordinate = findViewById(R.id.textView_coordinate_right);
         isServerBusy = new AtomicBoolean(false);
-
         executorService = Executors.newFixedThreadPool(1);
-
         final JoystickView joystickRight = (JoystickView) findViewById(R.id.joystickView_right);
         joystickRight.setOnMoveListener(new JoystickView.OnMoveListener() {
             @SuppressLint("DefaultLocale")
@@ -94,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 isServerBusy.set(true);
                 Future<String> future = executorService.submit(() -> doPost(angle, strength));
-                 // todo Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+                // todo Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
 
                 mTextViewAngle.setText(angle + "°");
                 mTextViewStrength.setText(strength + "%");
@@ -109,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         mjpegView = findViewById(R.id.mjpegview);
         mjpegView.setAdjustHeight(true);
         mjpegView.setMode(MjpegView.MODE_FIT_WIDTH);
-        mjpegView.setUrl("http://192.168.2.254:8000/stream.mjpg");
+        mjpegView.setUrl(urlText + "/stream.mjpg");
         mjpegView.setRecycleBitmap(true);
     }
 
