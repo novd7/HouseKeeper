@@ -47,6 +47,6 @@ public class StartActivity extends AppCompatActivity {
 
     public void load() {
         Log.d("StartActivity", "load");
-        address.setText(sp.getString("address", "Введите адрес"));
+        address.setText(sp.getString("address", ""));
     }
 }

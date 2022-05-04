@@ -9,21 +9,21 @@
 
     <EditText
         android:id="@+id/address"
-        android:layout_width="376dp"
-        android:layout_height="54dp"
+        android:layout_width="335dp"
+        android:layout_height="56dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:hint="Введите адрес"
+        android:textColor="@color/black"
         android:textColorHint="#78909C"
         android:textSize="20sp"
         stream:layout_constraintBottom_toBottomOf="parent"
         stream:layout_constraintEnd_toEndOf="parent"
-        stream:layout_constraintHorizontal_bias="0.405"
         stream:layout_constraintStart_toStartOf="parent"
         stream:layout_constraintTop_toTopOf="parent"
-        stream:layout_constraintVertical_bias="0.323" />
+        stream:layout_constraintVertical_bias="0.317" />
 
     <Button
         android:id="@+id/connect"
