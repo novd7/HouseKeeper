@@ -27,7 +27,7 @@ public class StartActivity extends AppCompatActivity {
         address = findViewById(R.id.address);
         connect = findViewById(R.id.connect);
         sp = getSharedPreferences("address", MODE_PRIVATE);
-        load();
+        address.setText(sp.getString("address", ""));
     }
 
     public void connect(View view) {
@@ -45,8 +45,4 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
-    public void load() {
-        Log.d("StartActivity", "load");
-        address.setText(sp.getString("address", ""));
-    }
 }

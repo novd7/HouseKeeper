@@ -33,9 +33,48 @@ public class MainActivity extends AppCompatActivity {
     private MjpegView mjpegView;
     private TextView mTextViewAngle;
     private TextView mTextViewStrength;
-    private TextView mTextViewCoordinate;
     private ExecutorService executorService;
     private AtomicBoolean isServerBusy;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        sp = getSharedPreferences("address", MODE_PRIVATE);
+        urlText = sp.getString("address", "not defined");
+        url = getUrl();
+        mTextViewAngle = (TextView) findViewById(R.id.textView_angle_right);
+        mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
+        isServerBusy = new AtomicBoolean(false);
+        executorService = Executors.newSingleThreadExecutor();  // исполнитель задач
+        final JoystickView joystickRight = (JoystickView) findViewById(R.id.joystickView_right);
+        joystickRight.setOnMoveListener(new JoystickView.OnMoveListener() {
+            @Override
+            public void onMove(int angle, int strength) {
+                Log.d("myOnMove", "" + angle + " " + strength);
+                if (isServerBusy.get()) {
+                    return;
+                }
+                isServerBusy.set(true);
+                executorService.submit(() -> doPost(angle, strength));
+
+                mTextViewAngle.setText(angle + "°");
+                mTextViewStrength.setText(strength + "%");
+            }
+        });
+
+        mjpegView = findViewById(R.id.mjpegview);
+        mjpegView.setAdjustHeight(true);
+        mjpegView.setMode(MjpegView.MODE_FIT_WIDTH);
+        mjpegView.setUrl(urlText + "/stream.mjpg");
+        mjpegView.setRecycleBitmap(true);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executorService.shutdown();  // чтобы аккуратно завершить поток
+    }
 
     protected String doPost(int angle, int strength) {
         Log.d("doInBackground", "" + angle + " " + strength);
@@ -44,10 +83,9 @@ public class MainActivity extends AppCompatActivity {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json; utf-8");
-            con.setConnectTimeout(1000);
-            con.setReadTimeout(5000);
+            con.setConnectTimeout(1000);  // Сколько времени ожидается соединение
+            con.setReadTimeout(5000);  // Сколько времени ожидается ответ от сервера
             con.setDoOutput(true);
-
 
             String json = gson.toJson(new Data(angle, strength));
             try (OutputStream os = con.getOutputStream()) {
@@ -76,42 +114,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        sp = getSharedPreferences("address", MODE_PRIVATE);
-        urlText = sp.getString("address", "not defined");
-        url = getUrl();
-        mTextViewAngle = (TextView) findViewById(R.id.textView_angle_right);
-        mTextViewStrength = (TextView) findViewById(R.id.textView_strength_right);
-        mTextViewCoordinate = findViewById(R.id.textView_coordinate_right);
-        isServerBusy = new AtomicBoolean(false);
-        executorService = Executors.newFixedThreadPool(1);
-        final JoystickView joystickRight = (JoystickView) findViewById(R.id.joystickView_right);
-        joystickRight.setOnMoveListener(new JoystickView.OnMoveListener() {
-            @SuppressLint("DefaultLocale")
-            @Override
-            public void onMove(int angle, int strength) {
-                Log.d("myOnMove", "" + angle + " " + strength);
-                if (isServerBusy.get()) {
-                    return;
-                }
-                isServerBusy.set(true);
-                executorService.submit(() -> doPost(angle, strength));
-                // todo Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
-
-                mTextViewAngle.setText(angle + "°");
-                mTextViewStrength.setText(strength + "%");
-            }
-        });
-
-        mjpegView = findViewById(R.id.mjpegview);
-        mjpegView.setAdjustHeight(true);
-        mjpegView.setMode(MjpegView.MODE_FIT_WIDTH);
-        mjpegView.setUrl(urlText + "/stream.mjpg");
-        mjpegView.setRecycleBitmap(true);
-    }
 
     @NonNull
     private URL getUrl() {
